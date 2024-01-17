@@ -1,0 +1,28 @@
+{
+  "name": "botexapi",
+  "version": "1.0.0",
+  "description": "An investment platform API",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamcodemonga/botexapi.git"
+  },
+  "keywords": [
+    "investment",
+    "crytocurrency",
+    "forex"
+  ],
+  "author": "botex",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iamcodemonga/botexapi/issues"
+  },
+  "homepage": "https://github.com/iamcodemonga/botexapi#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
