@@ -1,24 +1,21 @@
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv').config({ path: './.env' });
+// const jwt = require('jsonwebtoken');
+// const dotenv = require('dotenv').config({ path: './.env' });
 const db = require('../server');
-const { promisify } = require('util');
-const path = require('path');
+// const { promisify } = require('util');
+// const path = require('path');
 
 exports.isLoggedIn = async(req, res, next) => {
+    const { email } = req.query;
 
-    if (req.cookies.botexfinance){
-
+    if (email){
         try {
-            const decoded = await promisify(jwt.verify)(req.cookies.botexfinance, process.env.JWT_SECRET);
-
-            db.query(`SELECT id, fullname, username, email, role, referrer, settlement, balance, profitbalance FROM users WHERE id = ?`, [decoded.id], (error, result) => {
+            db.query(`SELECT id, fullname, username, email, role, referrer, settlement, balance, profitbalance FROM users WHERE email = ?`, [email], (error, result) => {
                 if (error) throw error;
 
                 if (!result) {
                     return next();
                 }
 
-                console.log(decoded)
                 req.user = result[0];
                 return next();
             })
@@ -33,7 +30,6 @@ exports.isLoggedIn = async(req, res, next) => {
 }
 
 exports.register = async(req, res) => {
-
     let { fullname, email, username, password, referrer } = req.body;
     let fullnameRegex = /^([a-zA-Z ]+)$/;
     let usernameRegex = /^([a-zA-Z0-9\-_]+)$/;
@@ -64,7 +60,8 @@ exports.register = async(req, res) => {
         return;
     }
 
-    email = email.toLowerCase().replace(/ /g, "_")
+    username = username.toLowerCase();
+    email = email.toLowerCase().replace(/ /g, "_");
 
     db.query("SELECT email FROM users WHERE email=?", [email], (err, result) => {
         if (err) throw err;
@@ -99,11 +96,9 @@ exports.register = async(req, res) => {
             })
         }
     })
-
 }
 
 exports.login = async(req, res) => {
-
     let { username, password } = req.body;
     let usernameRegex = /^([a-zA-Z0-9\-_]+)$/;
 
@@ -119,32 +114,18 @@ exports.login = async(req, res) => {
         return;
     }
 
+    username = username.toLowerCase();
+
     db.query("SELECT id, fullname, username, email, role, balance, profitbalance FROM users WHERE username=? AND password=?", [username, password], (err, result) => {
         if (err) throw err;
         if (result.length < 1) {
             res.json({ error: true, status: 401, message: "username or password is incorrect!"})
             return;
         } else {
-            const id = result[0]?.id;
-            //create token for user
-            const token = jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXP});
-            //set cookie
-            res.cookie(
-                'botexfinance',
-                 token,
-                    {
-                        maxAge: 7*24*60*60*1000,
-                        httpOnly: true,
-                        sameSite: 'none',
-                        secure: false
-                    }
-            );
-            // successful
             res.json({ error: false, status: 200, message: `Welcome back, ${result[0]?.username}`, user: result[0]})
             return;
         }
     })
-
 }
 
 exports.logout = async(req, res) => {

@@ -1,12 +1,12 @@
 const { Router } = require('express');
-const { allwithdrawals, getuserwithdrawals, request, approvewithdrawal } = require('../controllers/withdrawals');
+const { allwithdrawals, totalwithdrawals, getuserwithdrawals, request, approvewithdrawal, getalluserwithdrawals } = require('../controllers/withdrawals');
 const router = Router();
 
 // Get all withdrawal requests
-router.get('/', allwithdrawals)
+router.get('/', totalwithdrawals)
 
 // Get specific user withdrawal requests
-router.get('/:user', getuserwithdrawals)
+router.get('/:user', getalluserwithdrawals)
 
 // add a user withdrawal request to record
 router.post('/request/:user', request)

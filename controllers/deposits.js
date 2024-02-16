@@ -15,6 +15,15 @@ exports.alldeposits = async(req, res) => {
     })
 }
 
+exports.totaldeposits = async(req, res) => {
+
+    db.query(`SELECT deposits.id, deposits.package, deposits.method, deposits.amount, deposits.validity, deposits.remaining, deposits.investor, DATE_FORMAT(deposits.date, '%D %M, %Y') AS paydate, DATE_FORMAT(ADDDATE(deposits.date, validity), '%D %M, %Y') AS duedate, deposits.approved, users.fullname FROM deposits LEFT JOIN users on deposits.investor=users.id ORDER BY id DESC`, [], (err, result) => {
+        if(err) throw err;
+        res.json({ error: false, status: 200, deposits: result })
+        return;
+    })
+}
+
 exports.getuserdeposits = async(req, res) => {
     let { start, limit } = req.query;
 
@@ -25,7 +34,17 @@ exports.getuserdeposits = async(req, res) => {
 
     const { user } = req.params;
 
-    db.query(`SELECT id, package, method, amount, validity, remaining investor, DATE_FORMAT(ADDDATE(date, validity), '%D %M, %Y') AS duedate, approved FROM deposits WHERE investor=? ORDER BY id DESC LIMIT ? OFFSET ?`, [ user, parseInt(limit), parseInt(start) ], (err, result) => {
+    db.query(`SELECT id, package, method, amount, validity, remaining, investor, DATE_FORMAT(ADDDATE(date, validity), '%D %M, %Y') AS duedate, approved FROM deposits WHERE investor=? ORDER BY id DESC LIMIT ? OFFSET ?`, [ user, parseInt(limit), parseInt(start) ], (err, result) => {
+        if(err) throw err;
+        res.json({ error: false, status: 200, deposits: result })
+        return;
+    })
+}
+
+exports.getalluserdeposits = async(req, res) => {
+    const { user } = req.params;
+
+    db.query(`SELECT id, package, method, amount, validity, remaining, investor, DATE_FORMAT(date, '%D %M, %Y') AS paydate, DATE_FORMAT(ADDDATE(date, validity), '%D %M, %Y') AS duedate, approved FROM deposits WHERE investor=? ORDER BY id DESC`, [ user ], (err, result) => {
         if(err) throw err;
         res.json({ error: false, status: 200, deposits: result })
         return;
@@ -34,7 +53,7 @@ exports.getuserdeposits = async(req, res) => {
 
 exports.adduserdeposit = async(req, res) => {
     const { user } = req.params;
-    const { plan, method, amount } = req.body;
+    let { plan, method, amount } = req.body;
     const validity = (plan == "starter" ? 2 : (plan == "basic" ? 5 : (plan == "advanced" ? 14 : (plan == "long term" ? 30 : 0))))
 
     const packages = [ "starter", "basic", "advanced", "long term" ]
@@ -46,6 +65,13 @@ exports.adduserdeposit = async(req, res) => {
 
     if (!packages.includes(plan)) {
         res.json({ error: true, status: 401, message: "Invalid Investment package!"})
+        return;
+    }
+
+    amount = Number(amount);
+
+    if (amount < 100 ) {
+        res.json({ error: true, status: 401, message: "You can't deposit less than a $100!"})
         return;
     }
 

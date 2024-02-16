@@ -15,6 +15,14 @@ exports.allusers = async(req, res) => {
     })
 }
 
+exports.getallusers = async(req, res) => {
+    db.query(`SELECT id, fullname, username, email, referrer, balance, profitbalance FROM users WHERE username != ? ORDER BY id DESC`, [ "admin" ], (err, result) => {
+        if(err) throw err;
+        res.json({ error: false, status: 200, users: result })
+        return;
+    })
+}
+
 exports.getuser = async(req, res) => {
     let investments, withdrawals, refbonuses;
     let totaldeposits, verifiedpayments, pendingrequests;
@@ -44,7 +52,6 @@ exports.getuser = async(req, res) => {
                             referral: refbonuses == null ? 0 : refbonuses,
                             daily: result[0].daily == null ? 0 : result[0].daily
                         }
-                        console.log({ metrics, profile });
                         res.json({ metrics, profile })
                         return;
                     })
@@ -72,7 +79,6 @@ exports.getuser = async(req, res) => {
                             investors: result[0].allusers == null ? 0 : result[0].allusers,
                             requests: pendingrequests == null ? 0 : pendingrequests,
                         }
-                        console.log({ metrics, profile });
                         res.json({ metrics, profile })
                         return;
                     })
@@ -120,3 +126,19 @@ exports.edituser = async(req, res) => {
     })
 
 }
+
+exports.bonuses = async(req, res) => {
+    const { userid } = req.params;
+
+    if (!userid) {
+        res.json({ error: true, status: 401, message: "You are not logged in!"})
+        return;
+    }
+
+    db.query("SELECT users.id, users.fullname, earnings.amount, DATE_FORMAT(earnings.date, '%D %M, %Y') AS refdate FROM earnings LEFT JOIN users ON users.id=earnings.referee WHERE earnings.earner=? AND users.settlement=? AND earnings.type=?", [userid, true, "referral"], (err, result) => {
+        if (err) throw err;
+        res.json({ error: false, status: 200, bonuses: result })
+        return;
+    })
+}
+

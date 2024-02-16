@@ -15,6 +15,15 @@ exports.allwithdrawals = async(req, res) => {
     })
 }
 
+exports.totalwithdrawals = async(req, res) => {
+
+    db.query(`SELECT withdrawals.id, withdrawals.investor, withdrawals.method, withdrawals.wallet, users.fullname, withdrawals.amount, DATE_FORMAT(withdrawals.date, '%D %M, %Y'), withdrawals.approved FROM withdrawals LEFT JOIN users ON withdrawals.investor = users.id ORDER BY withdrawals.id DESC`, [], (err, result) => {
+        if(err) throw err;
+        res.json({ error: false, status: 200, withdrawals: result })
+        return;
+    })
+}
+
 exports.getuserwithdrawals = async(req, res) => {
     let { start, limit } = req.query;
 
@@ -32,9 +41,20 @@ exports.getuserwithdrawals = async(req, res) => {
     })
 }
 
+exports.getalluserwithdrawals = async(req, res) => {
+    const { user } = req.params;
+
+    db.query(`SELECT id, investor, method, wallet, amount, DATE_FORMAT(date, '%D %M, %Y') AS date, approved FROM withdrawals WHERE investor=? ORDER BY id DESC`, [ user ], (err, result) => {
+        if(err) throw err;
+        res.json({ error: false, status: 200, withdrawals: result });
+        return;
+    })
+}
+
 exports.request = async(req, res) => {
     const { user } = req.params;
-    const { wallet, method, amount } = req.body;
+    let { wallet, method, amount } = req.body;
+    amount = Number(amount)
 
     if (!wallet || !method || !amount) {
         res.json({ error: true, status: 401, message: "please, fill in all fields!"})
@@ -61,7 +81,7 @@ exports.request = async(req, res) => {
         
         db.query(`INSERT INTO withdrawals ( investor, method, wallet, amount, date, approved ) VALUES (?,?,?,?, NOW(),?)`, [ user, method, wallet, amount, false ], (err, result) => {
             if(err) throw err;
-            res.json({ error: false, status: 200, message: "successful!"})
+            res.json({ error: false, status: 200, message: "your request was successful!"})
             return;
         })
     })
