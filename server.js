@@ -22,10 +22,13 @@ db.getConnection((err, connection) => {
             console.log('Database connection was refused');
         }
     }
-    if (connection) console.log('mysql pool connected'); connection.release()
+    if (connection) {
+        console.log('mysql pool connected'); 
+        connection.release();
+    }
     return;
-})
+});
 
-db.query = util.promisify(db.query)
+db.query = util.promisify(db.query);
 
 module.exports = db;
