@@ -74,19 +74,32 @@ exports.topup = async(req, res) => {
         }))
     }
 
-    db.query(`SELECT id, package, amount, validity, remaining, investor, approved FROM deposits WHERE remaining > 0 AND approved=?`, [ true ], async(err, result) => {
+    db.query(`SELECT id, checkdate FROM topjobs WHERE DATE(checkdate) = CURDATE()`, [ ], async(err, result) => {
         if (err) throw err;
-        if(result.length < 1) {
-            res.json({ error: true, status: 200, message: "No active investment plans!"})
+        if(result.length > 0) {
+            res.json({ error: true, status: 401, message: "Funds already disbursed, today!!"})
             return;
         }
-        try {
-            await dailytopup(result);
-            res.json({ error: false, status: 200, message: "Daily payments successful!" });
-            return;
-        } catch (error) {
-            console.log(error.message)
-        }
+        db.query(`SELECT id, package, amount, validity, remaining, investor, approved FROM deposits WHERE remaining > 0 AND approved=?`, [ true ], async(err, result) => {
+            if (err) throw err;
+            if(result.length < 1) {
+                db.query(`INSERT INTO topjobs(checkdate) VALUES (NOW())`, [], (err, result) => {
+                    if(err) throw err;
+                })
+                res.json({ error: false, status: 200, message: "No active investment plans!"})
+                return;
+            }
+            try {
+                await dailytopup(result);
+                db.query(`INSERT INTO topjobs(checkdate) VALUES (NOW())`, [], (err, result) => {
+                    if(err) throw err;
+                })
+                res.json({ error: false, status: 200, message: "Daily payments successful!" });
+                return;
+            } catch (error) {
+                console.log(error.message)
+            }
+        })
     })
 }
 
@@ -97,7 +110,7 @@ exports.payday = async(req, res) => {
                 let profit = data.amount+(0.05*data.amount);
                 db.query(`UPDATE users SET profitbalance=profitbalance + ? WHERE id=?`, [ profit, data.investor ], (err, result) => {
                     if(err) throw err;
-                    db.query(`UPDATE deposits SET remaining=? WHERE investor=?`, [0, data.investor], (err, result) => {
+                    db.query(`UPDATE deposits SET remaining=? WHERE investor=? AND package=? AND DATE(ADDDATE(date, validity)) = CURDATE()`, [0, data.investor, data.package], (err, result) => {
                         if(err) throw err;
                     })
                 })
@@ -107,7 +120,7 @@ exports.payday = async(req, res) => {
                 let profit = data.amount+(0.1*data.amount);
                 db.query(`UPDATE users SET profitbalance=profitbalance + ? WHERE id=?`, [ profit, data.investor ], (err, result) => {
                     if(err) throw err;
-                    db.query(`UPDATE deposits SET remaining=? WHERE investor=?`, [0, data.investor], (err, result) => {
+                    db.query(`UPDATE deposits SET remaining=? WHERE investor=? AND package=? AND DATE(ADDDATE(date, validity)) = CURDATE()`, [0, data.investor, data.package], (err, result) => {
                         if(err) throw err;
                     })
                 })
@@ -117,7 +130,7 @@ exports.payday = async(req, res) => {
                 let profit = data.amount+(0.15*data.amount);
                 db.query(`UPDATE users SET profitbalance=profitbalance + ? WHERE id=?`, [ profit, data.investor ], (err, result) => {
                     if(err) throw err;
-                    db.query(`UPDATE deposits SET remaining=? WHERE investor=?`, [0, data.investor], (err, result) => {
+                    db.query(`UPDATE deposits SET remaining=? WHERE investor=? AND package=? AND DATE(ADDDATE(date, validity)) = CURDATE()`, [0, data.investor, data.package], (err, result) => {
                         if(err) throw err;
                     })
                 })
@@ -127,7 +140,7 @@ exports.payday = async(req, res) => {
                 let profit = data.amount+(0.25*data.amount);
                 db.query(`UPDATE users SET profitbalance=profitbalance + ? WHERE id=?`, [ profit, data.investor ], (err, result) => {
                     if(err) throw err;
-                    db.query(`UPDATE deposits SET remaining=? WHERE investor=?`, [0, data.investor], (err, result) => {
+                    db.query(`UPDATE deposits SET remaining=? WHERE investor=? AND package=? AND DATE(ADDDATE(date, validity)) = CURDATE()`, [0, data.investor, data.package], (err, result) => {
                         if(err) throw err;
                     })
                 })
